@@ -1,5 +1,6 @@
 export _containers_count=${_containers_count:-2}
 export _containers_provider="hastur"
+export _containers_spawner="hastur:spawn"
 
 # @description Spawns amount of containers, uses specified provider.
 #
@@ -10,7 +11,37 @@ export _containers_provider="hastur"
 # @noargs
 containers:spawn() {
     for (( i = $(containers:count); i > 0; i-- )); do
-        containers:provider spawn "${@}"
+        $_containers_spawner "${@}"
+    done
+}
+
+# @description Calls specified function once per running container. Function
+# will be given container name and container IP args.
+#
+# @arg $* Function to call.
+containers:do() {
+    local containers=()
+    local ips=()
+
+    containers:get-list containers
+    containers:get-ip-list ips
+
+    for (( i = 0; i < $(containers:count); i++ )); do
+        "${@}" "${containers[$i]}" "${ips[$i]}"
+    done
+}
+
+# @description Calls specified function once per container. Container is not
+# necessarry running.
+#
+# @arg $* Function to call.
+containers:foreach() {
+    local containers=()
+
+    containers:get-list containers
+
+    for (( i = 0; i < $(containers:count); i++ )); do
+        "${@}" "${containers[$i]}"
     done
 }
 
@@ -92,7 +123,7 @@ containers:get-ip() {
     local var_name="$1"
     shift
 
-    eval "$var_name=$(containers:provider print-ip "${@}")"
+    eval $var_name='$(containers:provider print-ip "${@}")'
 }
 
 # @description Gets container's root FS into variable.
@@ -103,7 +134,7 @@ containers:get-rootfs() {
     local var_name="$1"
     shift
 
-    eval "$var_name=$(containers:provider print-rootfs "${@}")"
+    eval $var_name='$(containers:provider print-rootfs "${@}")'
 }
 
 # @description Checks, that specified container is active (running).
@@ -129,6 +160,10 @@ containers:is-active() {
 # @arg $1 string Provider name.
 containers:register-provider() {
     _containers_provider="$1"
+}
+
+containers:register-spawner() {
+    _containers_spawner="$1"
 }
 
 containers:provider() {
