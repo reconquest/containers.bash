@@ -166,6 +166,12 @@ containers:register-spawner() {
     _containers_spawner="$1"
 }
 
+containers:keep-containers() {
+    containers:wipe() {
+        :
+    }
+}
+
 containers:provider() {
     local command="$1"
     shift
